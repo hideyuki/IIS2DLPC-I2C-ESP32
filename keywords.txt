@@ -1,0 +1,77 @@
+#######################################
+# Syntax Coloring Map For IIS2DLPC
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+IIS2DLPCSensor	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+ReadID	KEYWORD2
+Enable	KEYWORD2
+Disable	KEYWORD2
+GetSensitivity	KEYWORD2
+GetOutputDataRate	KEYWORD2
+SetOutputDataRate	KEYWORD2
+SetOutputDataRate_With_Mode KEYWORD2
+SetOutputDataRate_When_Enable KEYWORD2
+SetOutputDataRate_When_Disable KEYWORD2
+GetFullScale	KEYWORD2
+SetFullScale	KEYWORD2
+GetAxes	KEYWORD2
+GetAxesRaw	KEYWORD2
+ReadReg	KEYWORD2
+WriteReg	KEYWORD2
+SetSelfTest	KEYWORD2
+GetSelfTest KEYWORD2
+GetDRDYStatus	KEYWORD2
+GetEventStatus	KEYWORD2
+EnableFreeFallDetection	KEYWORD2
+DisableFreeFallDetection	KEYWORD2
+SetFreeFallThreshold	KEYWORD2
+SetFreeFallDuration	KEYWORD2
+GetFreeFallThreshold	KEYWORD2
+GetFreeFallDuration	KEYWORD2
+EnableWakeUpDetection	KEYWORD2
+DisableWakeUpDetection	KEYWORD2
+SetWakeUpThreshold	KEYWORD2
+SetWakeUpDuration	KEYWORD2
+EnableSingleTapDetection	KEYWORD2
+DisableSingleTapDetection	KEYWORD2
+EnableDoubleTapDetection	KEYWORD2
+DisableDoubleTapDetection	KEYWORD2
+SetTapThreshold	KEYWORD2
+SetTapShockTime	KEYWORD2
+SetTapQuietTime	KEYWORD2
+SetTapDurationTime	KEYWORD2
+Enable6DOrientation	KEYWORD2
+Disable6DOrientation	KEYWORD2
+Set6DOrientationThreshold	KEYWORD2
+Get6DOrientationThreshold	KEYWORD2
+Get6DOrientationXL	KEYWORD2
+Get6DOrientationXH	KEYWORD2
+Get6DOrientationYL	KEYWORD2
+Get6DOrientationYH	KEYWORD2
+Get6DOrientationZL	KEYWORD2
+Get6DOrientationZH	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+IIS2DLPC_OK	LITERAL1
+IIS2DLPC_ERROR	LITERAL1
+
+IIS2DLPC_ACC_SENSITIVITY_FOR_FS_2G_LOPOW1_MODE	LITERAL1
+IIS2DLPC_ACC_SENSITIVITY_FOR_FS_2G_OTHER_MODES	LITERAL1
+IIS2DLPC_ACC_SENSITIVITY_FOR_FS_4G_LOPOW1_MODE	LITERAL1
+IIS2DLPC_ACC_SENSITIVITY_FOR_FS_4G_OTHER_MODES	LITERAL1
+IIS2DLPC_ACC_SENSITIVITY_FOR_FS_8G_LOPOW1_MODE	LITERAL1
+IIS2DLPC_ACC_SENSITIVITY_FOR_FS_8G_OTHER_MODES	LITERAL1
+IIS2DLPC_ACC_SENSITIVITY_FOR_FS_16G_LOPOW1_MODE	LITERAL1
+IIS2DLPC_ACC_SENSITIVITY_FOR_FS_16G_OTHER_MODES	LITERAL1
