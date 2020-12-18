@@ -41,12 +41,6 @@ IIS2DLPCSensor::IIS2DLPCSensor(SPIClass *spi, int cs_pin, uint32_t spi_speed) : 
   dev_i2c = NULL;
   address = 0;
 
-  uint8_t data = 0x05;
-
-  if (WriteReg(IIS2DLPC_CTRL2, data) != IIS2DLPC_OK) {
-    return ;
-  }
-
   if (Init() != IIS2DLPC_OK) {
     return;
   }
@@ -81,6 +75,13 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::Init()
   if (iis2dlpc_power_mode_set(&(reg_ctx), IIS2DLPC_HIGH_PERFORMANCE) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
+
+  /* Select default output data rate. */
+  acc_odr = 100.0f;
+  /* Select default operating mode. */
+  acc_operating_mode = IIS2DLPC_HIGH_PERFORMANCE_MODE;
+  /* Select default low noise (disabled). */
+  acc_low_noise = IIS2DLPC_LOW_NOISE_DISABLE;
 
   /* Output data rate selection - power down */
   if (iis2dlpc_data_rate_set(&(reg_ctx), IIS2DLPC_XL_ODR_OFF) != IIS2DLPC_OK) {
@@ -126,8 +127,7 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::Enable()
   }
 
   /*Function that set Ouput Data Rate and Power Mode*/
-  float Odr;
-  if (SetOutputDataRate_When_Enable(Odr, IIS2DLPC_HIGH_PERFORMANCE_MODE, IIS2DLPC_LOW_NOISE_DISABLE) != IIS2DLPC_OK) {
+  if (SetOutputDataRate_When_Enable(acc_odr, acc_operating_mode, acc_low_noise) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
@@ -261,6 +261,7 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetSensitivity(float *Sensitivity)
  */
 IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetOutputDataRate(float *Odr)
 {
+  IIS2DLPCStatusTypeDef ret = IIS2DLPC_OK;
   iis2dlpc_odr_t odr_low_level;
   iis2dlpc_mode_t mode;
 
@@ -309,7 +310,7 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetOutputDataRate(float *Odr)
 
         default:
           *Odr = -1.0f;
-          return IIS2DLPC_ERROR;
+          ret = IIS2DLPC_ERROR;
           break;
       }
       break;
@@ -362,7 +363,7 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetOutputDataRate(float *Odr)
 
         default:
           *Odr = -1.0f;
-          return IIS2DLPC_ERROR;
+          ret = IIS2DLPC_ERROR;
           break;
       }
       break;
@@ -395,9 +396,11 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetOutputDataRate(float *Odr)
 
         default:
           *Odr = -1.0f;
-          return IIS2DLPC_ERROR;
+          ret = IIS2DLPC_ERROR;
           break;
       }
+      break;
+
     case IIS2DLPC_XL_ODR_1k6Hz:
       switch (mode) {
         case IIS2DLPC_HIGH_PERFORMANCE:
@@ -426,18 +429,18 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetOutputDataRate(float *Odr)
 
         default:
           *Odr = -1.0f;
-          return IIS2DLPC_ERROR;
+          ret = IIS2DLPC_ERROR;
           break;
       }
       break;
 
     default:
       *Odr = -1.0f;
-      return IIS2DLPC_ERROR;
+      ret = IIS2DLPC_ERROR;
       break;
   }
 
-  return IIS2DLPC_OK;
+  return ret;
 }
 
 /**
@@ -578,6 +581,11 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::SetOutputDataRate_When_Enable(float Odr, I
     return IIS2DLPC_ERROR;
   }
 
+  /* Store the current Odr, Mode and Noise values */
+  acc_odr = Odr;
+  acc_operating_mode = Mode;
+  acc_low_noise = Noise;
+
   return IIS2DLPC_OK;
 }
 
@@ -590,9 +598,10 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::SetOutputDataRate_When_Enable(float Odr, I
  */
 IIS2DLPCStatusTypeDef IIS2DLPCSensor::SetOutputDataRate_When_Disable(float Odr, IIS2DLPC_Operating_Mode_t Mode, IIS2DLPC_Low_Noise_t Noise)
 {
-  iis2dlpc_odr_t new_odr;
+  acc_operating_mode = Mode;
+  acc_low_noise = Noise;
 
-  new_odr = (Odr <=    1.6f) ? IIS2DLPC_XL_ODR_1Hz6_LP_ONLY
+  acc_odr = (Odr <=    1.6f) ? IIS2DLPC_XL_ODR_1Hz6_LP_ONLY
             : (Odr <=   12.5f) ? IIS2DLPC_XL_ODR_12Hz5
             : (Odr <=   25.0f) ? IIS2DLPC_XL_ODR_25Hz
             : (Odr <=   50.0f) ? IIS2DLPC_XL_ODR_50Hz
@@ -601,10 +610,6 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::SetOutputDataRate_When_Disable(float Odr, 
             : (Odr <=  400.0f) ? IIS2DLPC_XL_ODR_400Hz
             : (Odr <=  800.0f) ? IIS2DLPC_XL_ODR_800Hz
             :                   IIS2DLPC_XL_ODR_1k6Hz;
-
-  if (iis2dlpc_data_rate_set(&(reg_ctx), new_odr) != IIS2DLPC_OK) {
-    return IIS2DLPC_ERROR;
-  }
 
   return IIS2DLPC_OK;
 }
@@ -675,10 +680,10 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::SetFullScale(int32_t fullscale)
  * @param value pointer where the raw values are written
  * @retval 0 in case of success, an error code otherwise
  */
-IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetAxesRaw(IIS2DLPC_AxesRaw_t *value)
+IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetAxesRaw(int16_t *value)
 {
   iis2dlpc_mode_t mode;
-  iis2dlpc_axis3bit16_t data_raw;
+  axis3bit16_t data_raw;
 
   /*Get power mode*/
   if (iis2dlpc_power_mode_get(&reg_ctx, &mode) != IIS2DLPC_OK) {
@@ -696,9 +701,9 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetAxesRaw(IIS2DLPC_AxesRaw_t *value)
     case IIS2DLPC_CONT_LOW_PWR_LOW_NOISE_12bit:
     case IIS2DLPC_SINGLE_LOW_LOW_NOISE_PWR_12bit:
       /* Data format 12 bits. */
-      value->x = (data_raw.i16bit[0] / 16);
-      value->y = (data_raw.i16bit[1] / 16);
-      value->z = (data_raw.i16bit[2] / 16);
+      value[0] = (data_raw.i16bit[0] / 16);
+      value[1] = (data_raw.i16bit[1] / 16);
+      value[2] = (data_raw.i16bit[2] / 16);
       break;
 
     case IIS2DLPC_HIGH_PERFORMANCE:
@@ -716,9 +721,9 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetAxesRaw(IIS2DLPC_AxesRaw_t *value)
     case IIS2DLPC_SINGLE_LOW_PWR_LOW_NOISE_3:
     case IIS2DLPC_SINGLE_LOW_PWR_LOW_NOISE_2:
       /*Data format 14 bits. */
-      value->x = (data_raw.i16bit[0] / 4);
-      value->y = (data_raw.i16bit[1] / 4);
-      value->z = (data_raw.i16bit[2] / 4);
+      value[0] = (data_raw.i16bit[0] / 4);
+      value[1] = (data_raw.i16bit[1] / 4);
+      value[2] = (data_raw.i16bit[2] / 4);
       break;
 
     default:
@@ -733,9 +738,9 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetAxesRaw(IIS2DLPC_AxesRaw_t *value)
  * @param acceleration pointer where the axes are written
  * @retval 0 in case of success, an error code otherwise
 */
-IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetAxes(IIS2DLPC_Axes_t *acceleration)
+IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetAxes(int32_t *acceleration)
 {
-  IIS2DLPC_AxesRaw_t data_raw[3];
+  int16_t data_raw[3];
   float sensitivity = 0.0f;
 
   /*Read raw data values */
@@ -749,9 +754,9 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetAxes(IIS2DLPC_Axes_t *acceleration)
   }
 
   /* Calculate */
-  acceleration->x = (int32_t)((float)((float) data_raw->x * sensitivity));
-  acceleration->y = (int32_t)((float)((float) data_raw->y * sensitivity));
-  acceleration->z = (int32_t)((float)((float) data_raw->z * sensitivity));
+  acceleration[0] = (int32_t)((float) data_raw[0] * sensitivity);
+  acceleration[1] = (int32_t)((float) data_raw[1] * sensitivity);
+  acceleration[2] = (int32_t)((float) data_raw[2] * sensitivity);
 
   return IIS2DLPC_OK;
 }
@@ -807,8 +812,6 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::SetSelfTest(uint8_t val)
  */
 IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetSelfTest(iis2dlpc_st_t *val)
 {
-  iis2dlpc_st_t *value;
-
   if (iis2dlpc_self_test_get(&reg_ctx, val) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
@@ -827,7 +830,6 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetEventStatus(IIS2DLPC_Event_Status_t *St
   iis2dlpc_tap_src_t      tap_src;
   iis2dlpc_sixd_src_t     sixd_src;
   iis2dlpc_ctrl4_int1_pad_ctrl_t int1_ctrl;
-  iis2dlpc_ctrl5_int2_pad_ctrl_t int2_ctrl;
 
   (void)memset((void *)Status, 0x0, sizeof(IIS2DLPC_Event_Status_t));
 
@@ -844,10 +846,6 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetEventStatus(IIS2DLPC_Event_Status_t *St
   }
 
   if (iis2dlpc_read_reg(&reg_ctx, IIS2DLPC_CTRL4_INT1_PAD_CTRL, (uint8_t *) &int1_ctrl, 1) != IIS2DLPC_OK) {
-    return IIS2DLPC_ERROR;
-  }
-
-  if (iis2dlpc_read_reg(&reg_ctx, IIS2DLPC_CTRL5_INT2_PAD_CTRL, (uint8_t *) &int2_ctrl, 1) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
@@ -908,7 +906,6 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::SetInterruptLatch(uint8_t Status)
 IIS2DLPCStatusTypeDef IIS2DLPCSensor::EnableFreeFallDetection()
 {
   iis2dlpc_ctrl4_int1_pad_ctrl_t val1;
-  iis2dlpc_ctrl5_int2_pad_ctrl_t val2;
 
   IIS2DLPCStatusTypeDef ret = IIS2DLPC_OK;
 
@@ -956,7 +953,6 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::EnableFreeFallDetection()
 IIS2DLPCStatusTypeDef IIS2DLPCSensor::DisableFreeFallDetection()
 {
   iis2dlpc_ctrl4_int1_pad_ctrl_t val1;
-  iis2dlpc_ctrl5_int2_pad_ctrl_t val2;
 
   /*Disable on INT1 and INT2 */
   if (iis2dlpc_pin_int1_route_get(&reg_ctx, &val1) != IIS2DLPC_OK) {
@@ -966,16 +962,6 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::DisableFreeFallDetection()
   val1.int1_ff = PROPERTY_DISABLE;
 
   if (iis2dlpc_pin_int1_route_set(&reg_ctx, &val1) != IIS2DLPC_OK) {
-    return IIS2DLPC_ERROR;
-  }
-
-  if (iis2dlpc_pin_int2_route_get(&reg_ctx, &val2) != IIS2DLPC_OK) {
-    return IIS2DLPC_ERROR;
-  }
-
-  val2.int2_fth = PROPERTY_DISABLE;
-
-  if (iis2dlpc_pin_int2_route_set(&reg_ctx, &val2) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
@@ -1031,73 +1017,12 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::SetFreeFallDuration(uint8_t Duration)
 }
 
 /*
- *  @brief Get the Threshold for the Free Fall event
- *  @param Threshold pointer
- *  @retval 0 in case of success, an error code otherwise
- */
-IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetFreeFallThreshold(uint8_t *Threshold)
-{
-  iis2dlpc_ff_ths_t value;
-
-  if (iis2dlpc_ff_threshold_get(&reg_ctx, &value) != IIS2DLPC_OK) {
-    return IIS2DLPC_ERROR;
-  }
-
-  switch (value) {
-    case IIS2DLPC_FF_TSH_5LSb_FS2g:
-      *Threshold = 0;
-      break;
-    case IIS2DLPC_FF_TSH_7LSb_FS2g:
-      *Threshold = 1;
-      break;
-    case IIS2DLPC_FF_TSH_8LSb_FS2g:
-      *Threshold = 2;
-      break;
-    case IIS2DLPC_FF_TSH_10LSb_FS2g:
-      *Threshold = 3;
-      break;
-    case IIS2DLPC_FF_TSH_11LSb_FS2g:
-      *Threshold = 4;
-      break;
-    case IIS2DLPC_FF_TSH_13LSb_FS2g:
-      *Threshold = 5;
-      break;
-    case IIS2DLPC_FF_TSH_15LSb_FS2g:
-      *Threshold = 6;
-      break;
-    case IIS2DLPC_FF_TSH_16LSb_FS2g:
-      *Threshold = 7;
-      break;
-    default:
-      *Threshold = 0;
-      break;
-  }
-
-  return IIS2DLPC_OK;
-}
-
-/*
- *  @brief Get the Duration for the Free Fall event
- *  @param Duration pointer
- *  @retval 0 in case of success, an error code otherwise
- */
-IIS2DLPCStatusTypeDef IIS2DLPCSensor::GetFreeFallDuration(uint8_t *Duration)
-{
-  if (iis2dlpc_ff_dur_get(&reg_ctx, Duration) != IIS2DLPC_OK) {
-    return IIS2DLPC_ERROR;
-  }
-
-  return IIS2DLPC_OK;
-}
-
-/*
  *  @brief Enable the detection of the Wake Up event
  *  @retval 0 in case of success, an error code otherwise
  */
 IIS2DLPCStatusTypeDef IIS2DLPCSensor::EnableWakeUpDetection()
 {
   iis2dlpc_ctrl4_int1_pad_ctrl_t val1;
-  iis2dlpc_ctrl5_int2_pad_ctrl_t val2;
 
   IIS2DLPCStatusTypeDef ret = IIS2DLPC_OK;
 
@@ -1145,7 +1070,6 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::DisableWakeUpDetection()
 {
 
   iis2dlpc_ctrl4_int1_pad_ctrl_t val1;
-  iis2dlpc_ctrl5_int2_pad_ctrl_t val2;
 
   /* Disable wake up event on INT1 and INT2 pins */
   if (iis2dlpc_pin_int1_route_get(&reg_ctx, &val1) != IIS2DLPC_OK) {
@@ -1329,7 +1253,7 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::DisableSingleTapDetection()
   if (iis2dlpc_tap_detection_on_x_set(&reg_ctx, PROPERTY_DISABLE) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
-  return IIS2DLPC_OK;
+  return ret;
 }
 
 /*
@@ -1464,7 +1388,8 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::DisableDoubleTapDetection()
   if (iis2dlpc_tap_detection_on_x_set(&reg_ctx, PROPERTY_DISABLE) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
-  return IIS2DLPC_OK;
+
+  return ret;
 }
 
 /*

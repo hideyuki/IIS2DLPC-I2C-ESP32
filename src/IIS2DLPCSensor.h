@@ -30,25 +30,7 @@ typedef enum {
   IIS2DLPC_ERROR = -1
 } IIS2DLPCStatusTypeDef;
 
-typedef struct {
-  int16_t x;
-  int16_t y;
-  int16_t z;
-} IIS2DLPC_AxesRaw_t;
-
-typedef struct {
-  int32_t x;
-  int32_t y;
-  int32_t z;
-} IIS2DLPC_Axes_t;
-
 /* To manage events ----------------------------------------------------------*/
-//PIN
-typedef enum {
-  IIS2DLPC_INT1_PIN,
-  IIS2DLPC_INT2_PIN
-} IIS2DLPC_Interrupt_Pin_t;
-
 
 //EVENT
 typedef struct {
@@ -78,26 +60,6 @@ typedef enum {
   IIS2DLPC_LOW_NOISE_ENABLE
 } IIS2DLPC_Low_Noise_t;
 
-typedef union {
-  int16_t i16bit[3];
-  uint8_t u8bit[6];
-} iis2dlpc_axis3bit16_t;
-
-typedef union {
-  int16_t i16bit;
-  uint8_t u8bit[2];
-} iis2dlpc_axis1bit16_t;
-
-typedef union {
-  int32_t i32bit[3];
-  uint8_t u8bit[12];
-} iis2dlpc_axis3bit32_t;
-
-typedef union {
-  int32_t i32bit;
-  uint8_t u8bit[4];
-} iis2dlpc_axis1bit32_t;
-
 /* Class Declaration ---------------------------------------------------------*/
 
 /**
@@ -121,8 +83,8 @@ class IIS2DLPCSensor {
     IIS2DLPCStatusTypeDef SetOutputDataRate_When_Disable(float Odr, IIS2DLPC_Operating_Mode_t Mode, IIS2DLPC_Low_Noise_t Noise);
     IIS2DLPCStatusTypeDef GetFullScale(int32_t *fullscale);
     IIS2DLPCStatusTypeDef SetFullScale(int32_t fullscale);
-    IIS2DLPCStatusTypeDef GetAxes(IIS2DLPC_Axes_t *acceleration);
-    IIS2DLPCStatusTypeDef GetAxesRaw(IIS2DLPC_AxesRaw_t *value);
+    IIS2DLPCStatusTypeDef GetAxes(int32_t *acceleration);
+    IIS2DLPCStatusTypeDef GetAxesRaw(int16_t *value);
     IIS2DLPCStatusTypeDef ReadReg(uint8_t reg, uint8_t *data);
     IIS2DLPCStatusTypeDef WriteReg(uint8_t reg, uint8_t data);
     IIS2DLPCStatusTypeDef SetSelfTest(uint8_t val);
@@ -140,8 +102,6 @@ class IIS2DLPCSensor {
     IIS2DLPCStatusTypeDef DisableFreeFallDetection();
     IIS2DLPCStatusTypeDef SetFreeFallThreshold(uint8_t Threshold);
     IIS2DLPCStatusTypeDef SetFreeFallDuration(uint8_t Duration);
-    IIS2DLPCStatusTypeDef GetFreeFallThreshold(uint8_t *Threshold);
-    IIS2DLPCStatusTypeDef GetFreeFallDuration(uint8_t *Duration);
 
     //Wake Up
     IIS2DLPCStatusTypeDef EnableWakeUpDetection();
@@ -280,7 +240,11 @@ class IIS2DLPCSensor {
 
     uint8_t acc_is_enabled;
 
-    stmdev_ctx_t reg_ctx;
+    float                     acc_odr;
+    IIS2DLPC_Operating_Mode_t acc_operating_mode;
+    IIS2DLPC_Low_Noise_t      acc_low_noise;
+
+    iis2dlpc_ctx_t reg_ctx;
 };
 
 #ifdef __cplusplus
