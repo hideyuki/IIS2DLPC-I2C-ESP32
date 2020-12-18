@@ -35,8 +35,6 @@ EnableFreeFallDetection	KEYWORD2
 DisableFreeFallDetection	KEYWORD2
 SetFreeFallThreshold	KEYWORD2
 SetFreeFallDuration	KEYWORD2
-GetFreeFallThreshold	KEYWORD2
-GetFreeFallDuration	KEYWORD2
 EnableWakeUpDetection	KEYWORD2
 DisableWakeUpDetection	KEYWORD2
 SetWakeUpThreshold	KEYWORD2
