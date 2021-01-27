@@ -71,8 +71,9 @@ class IIS2DLPCSensor {
     IIS2DLPCSensor(TwoWire *i2c, uint8_t address = IIS2DLPC_I2C_ADD_H); //ID SA0= 1
     /* default SA0=1, to change into SA0=0 must pass address =  IIS2DLPC_I2C_ADD_L*/
     IIS2DLPCSensor(SPIClass *spi, int cs_pin, uint32_t spi_speed = 2000000);
+    IIS2DLPCStatusTypeDef begin();
+    IIS2DLPCStatusTypeDef end();
     IIS2DLPCStatusTypeDef ReadID(uint8_t *Id);
-    IIS2DLPCStatusTypeDef Init();
     IIS2DLPCStatusTypeDef Enable();
     IIS2DLPCStatusTypeDef Disable();
     IIS2DLPCStatusTypeDef GetSensitivity(float *sensitivity);
@@ -227,7 +228,7 @@ class IIS2DLPCSensor {
     }
 
   private:
-
+    IIS2DLPCStatusTypeDef Init();
     /*Connection*/
     TwoWire *dev_i2c;
     SPIClass *dev_spi;
