@@ -14,14 +14,7 @@ IIS2DLPCSensor::IIS2DLPCSensor(TwoWire *i2c, uint8_t address) : dev_i2c(i2c), ad
   reg_ctx.write_reg = IIS2DLPC_io_write;
   reg_ctx.read_reg = IIS2DLPC_io_read;
   reg_ctx.handle = (void *)this;
-
-  if (Init() != IIS2DLPC_OK) {
-    return ;
-  }
-
-  acc_is_enabled = 0;
-
-  return ;
+  acc_is_enabled = 0U;
 }
 
 /** Constructor SPI
@@ -34,20 +27,9 @@ IIS2DLPCSensor::IIS2DLPCSensor(SPIClass *spi, int cs_pin, uint32_t spi_speed) : 
   reg_ctx.write_reg = IIS2DLPC_io_write;
   reg_ctx.read_reg = IIS2DLPC_io_read;
   reg_ctx.handle = (void *) this;
-
-  //Config CS PIN
-  pinMode(cs_pin, OUTPUT);
-  digitalWrite(cs_pin, HIGH);
   dev_i2c = NULL;
-  address = 0;
-
-  if (Init() != IIS2DLPC_OK) {
-    return;
-  }
-
-  acc_is_enabled = 0;
-
-  return ;
+  address = 0U;
+  acc_is_enabled = 0U;
 }
 
 /**
@@ -98,6 +80,51 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::Init()
     return IIS2DLPC_ERROR;
   }
 
+  acc_is_enabled = 0U;
+
+  return IIS2DLPC_OK;
+}
+
+/**
+ * @brief  Configure the sensor in order to be used
+ * @retval 0 in case of success, an error code otherwise
+ */
+IIS2DLPCStatusTypeDef IIS2DLPCSensor::begin()
+{
+  if(dev_spi)
+  {
+    // Configure CS pin
+    pinMode(cs_pin, OUTPUT);
+    digitalWrite(cs_pin, HIGH); 
+  }
+
+  if (Init() != IIS2DLPC_OK)
+  {
+    return IIS2DLPC_ERROR;
+  }
+
+  return IIS2DLPC_OK;
+}
+
+/**
+ * @brief  Disable the sensor and relative resources
+ * @retval 0 in case of success, an error code otherwise
+ */
+IIS2DLPCStatusTypeDef IIS2DLPCSensor::end()
+{
+  /* Disable acc */
+  if (Disable() != IIS2DLPC_OK)
+  {
+    return IIS2DLPC_ERROR;
+  }
+
+  /* Reset CS configuration */
+  if(dev_spi)
+  {
+    // Configure CS pin
+    pinMode(cs_pin, INPUT); 
+  }
+
   return IIS2DLPC_OK;
 }
 
@@ -131,7 +158,7 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::Enable()
     return IIS2DLPC_ERROR;
   }
 
-  acc_is_enabled = 1;
+  acc_is_enabled = 1U;
 
   return IIS2DLPC_OK;
 }
@@ -152,7 +179,7 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::Disable()
     return IIS2DLPC_ERROR;
   }
 
-  acc_is_enabled = 0;
+  acc_is_enabled = 0U;
 
   return IIS2DLPC_OK;
 }
@@ -930,7 +957,7 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::EnableFreeFallDetection()
   }
 
   /* FF_THS setting */
-  if (iis2dlpc_ff_threshold_set(&reg_ctx, IIS2DLPC_FF_TSH_11LSb_FS2g) != IIS2DLPC_OK) {
+  if (iis2dlpc_ff_threshold_set(&reg_ctx, IIS2DLPC_FF_TSH_10LSb_FS2g) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
@@ -1039,7 +1066,7 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::EnableWakeUpDetection()
   /* HP filter */
 
   /*Set wake up duration */
-  if (iis2dlpc_wkup_dur_set(&reg_ctx, 0x0) != IIS2DLPC_OK) {
+  if (iis2dlpc_wkup_dur_set(&reg_ctx, 0x00) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
@@ -1145,12 +1172,16 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::EnableSingleTapDetection()
   }
 
 
-  /* Set tap treshold */
+  /* Set tap threshold */
   if (iis2dlpc_tap_threshold_x_set(&reg_ctx, 0x09) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
-  if (iis2dlpc_tap_threshold_y_set(&reg_ctx, 0xE9) != IIS2DLPC_OK) {
+  if (iis2dlpc_tap_threshold_y_set(&reg_ctx, 0x09) != IIS2DLPC_OK) {
+    return IIS2DLPC_ERROR;
+  }
+
+  if (iis2dlpc_tap_threshold_z_set(&reg_ctx, 0x09) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
@@ -1174,16 +1205,12 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::EnableSingleTapDetection()
     return IIS2DLPC_ERROR;
   }
 
-  if (iis2dlpc_tap_threshold_z_set(&reg_ctx, 0xE9) != IIS2DLPC_OK) {
-    return IIS2DLPC_ERROR;
-  }
-
   /* Set quiet and shock time */
-  if (iis2dlpc_tap_quiet_set(&reg_ctx, 0x06) != IIS2DLPC_OK) {
+  if (iis2dlpc_tap_quiet_set(&reg_ctx, 0x01) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
-  if (iis2dlpc_tap_shock_set(&reg_ctx, 0x06) != IIS2DLPC_OK) {
+  if (iis2dlpc_tap_shock_set(&reg_ctx, 0x02) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
@@ -1236,8 +1263,8 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::DisableSingleTapDetection()
     return IIS2DLPC_ERROR;
   }
 
-  /* Reset tap threshold */
-  if (iis2dlpc_tap_threshold_x_set(&reg_ctx, 0x00) != IIS2DLPC_OK) {
+  /* Set tap priority X-Y-Z */
+  if (iis2dlpc_tap_axis_priority_set(&reg_ctx, IIS2DLPC_XYZ) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
@@ -1253,6 +1280,20 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::DisableSingleTapDetection()
   if (iis2dlpc_tap_detection_on_x_set(&reg_ctx, PROPERTY_DISABLE) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
+  
+  /* Reset tap threshold */
+  if (iis2dlpc_tap_threshold_x_set(&reg_ctx, 0x00) != IIS2DLPC_OK) {
+    return IIS2DLPC_ERROR;
+  }
+
+  if (iis2dlpc_tap_threshold_y_set(&reg_ctx, 0x00) != IIS2DLPC_OK) {
+    return IIS2DLPC_ERROR;
+  }
+
+  if (iis2dlpc_tap_threshold_z_set(&reg_ctx, 0x00) != IIS2DLPC_OK) {
+    return IIS2DLPC_ERROR;
+  }
+
   return ret;
 }
 
@@ -1291,16 +1332,16 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::EnableDoubleTapDetection()
     return IIS2DLPC_ERROR;
   }
 
-  /* Set tap treshold */
+  /* Set tap threshold */
   if (iis2dlpc_tap_threshold_x_set(&reg_ctx, 0x0C) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
-  if (iis2dlpc_tap_threshold_y_set(&reg_ctx, 0xEC) != IIS2DLPC_OK) {
+  if (iis2dlpc_tap_threshold_y_set(&reg_ctx, 0x0C) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
-  if (iis2dlpc_tap_threshold_z_set(&reg_ctx, 0xEC) != IIS2DLPC_OK) {
+  if (iis2dlpc_tap_threshold_z_set(&reg_ctx, 0x0C) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
@@ -1310,15 +1351,15 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::EnableDoubleTapDetection()
   }
 
   /* Set quiet and shock time */
-  if (iis2dlpc_tap_quiet_set(&reg_ctx, 0x7F) != IIS2DLPC_OK) {
+  if (iis2dlpc_tap_quiet_set(&reg_ctx, 0x03) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
-  if (iis2dlpc_tap_shock_set(&reg_ctx, 0x7F) != IIS2DLPC_OK) {
+  if (iis2dlpc_tap_shock_set(&reg_ctx, 0x03) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
-  if (iis2dlpc_tap_dur_set(&reg_ctx, 0x7F) != IIS2DLPC_OK) {
+  if (iis2dlpc_tap_dur_set(&reg_ctx, 0x07) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
@@ -1371,8 +1412,13 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::DisableDoubleTapDetection()
     return IIS2DLPC_ERROR;
   }
 
-  /* Reset tap threshold */
-  if (iis2dlpc_tap_threshold_x_set(&reg_ctx, 0x00) != IIS2DLPC_OK) {
+  /* Reset tap duration */
+  if (iis2dlpc_tap_dur_set(&reg_ctx, 0x00) != IIS2DLPC_OK) {
+    return IIS2DLPC_ERROR;
+  }
+
+  /* Set TAP priority X-Y-Z */
+  if (iis2dlpc_tap_axis_priority_set(&reg_ctx, IIS2DLPC_XYZ) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
@@ -1386,6 +1432,19 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::DisableDoubleTapDetection()
   }
 
   if (iis2dlpc_tap_detection_on_x_set(&reg_ctx, PROPERTY_DISABLE) != IIS2DLPC_OK) {
+    return IIS2DLPC_ERROR;
+  }
+
+  /* Reset tap threshold */
+  if (iis2dlpc_tap_threshold_x_set(&reg_ctx, 0x00) != IIS2DLPC_OK) {
+    return IIS2DLPC_ERROR;
+  }
+
+  if (iis2dlpc_tap_threshold_y_set(&reg_ctx, 0x00) != IIS2DLPC_OK) {
+    return IIS2DLPC_ERROR;
+  }
+
+  if (iis2dlpc_tap_threshold_z_set(&reg_ctx, 0x00) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 
@@ -1468,7 +1527,7 @@ IIS2DLPCStatusTypeDef IIS2DLPCSensor::Enable6DOrientation()
   }
 
   /* 6D orientation enabled */
-  if (iis2dlpc_6d_threshold_set(&reg_ctx, 0x40) != IIS2DLPC_OK) {
+  if (iis2dlpc_6d_threshold_set(&reg_ctx, 0x02) != IIS2DLPC_OK) {
     return IIS2DLPC_ERROR;
   }
 

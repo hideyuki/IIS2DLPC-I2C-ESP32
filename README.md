@@ -4,31 +4,34 @@ Arduino library to support the IIS2DLPC 3D accelerometer
 ## API
 
 This sensor uses I2C or SPI to communicate.
-For I2C it is then required to create a TwoWire interface before accessing to the sensor:
-	
-	dev_i2c = new TwoWire(I2C_SDA, I2C_SCL);
-	dev_i2c->begin();
+For I2C it is then required to create a TwoWire interface before accessing to the sensors:  
 
-For SPI it is then required to create a SPI interface before accessing to the sensor:
+    TwoWire dev_i2c(I2C_SDA, I2C_SCL);  
+    dev_i2c.begin();
 
-	dev_spi = new SPIClass(SPI_MOSI, SPI_MISO, SPI_SCK);
-	dev_spi->begin();
+For SPI it is then required to create a SPI interface before accessing to the sensors:  
 
-An instance can be created and enbaled when the I2C bus is used following the procedure below:
+    SPIClass dev_spi(SPI_MOSI, SPI_MISO, SPI_SCK);  
+    dev_spi.begin();
 
-	Accelero = new IIS2DLPCSensor(dev_i2c);
-	Accelero->Enable();
+An instance can be created and enabled when the I2C bus is used following the procedure below:
 
-An instance can be created and enbaled when the SPI bus is used following the procedure below:
+    IIS2DLPCSensor Accelero(&dev_i2c);
+    Accelero.begin();
+    Accelero.Enable();
 
-	Accelero = new IIS2DLPCSensor(dev_spi);
-	Accelero->Enable();
+An instance can be created and enabled when the SPI bus is used following the procedure below:
+
+    IIS2DLPCSensor Accelero(&dev_spi, CS_PIN);
+    Accelero.begin();
+    Accelero.Enable();
 
 The access to the sensor values is done as explained below:
 
-	Read accelerometer.
+  Read accelerometer.
 
-	Accelero->GetAxes(&accelerometer);
+    int32_t accelerometer[3];
+    Accelero.GetAxes(accelerometer);
 
 ## Documentation
 
