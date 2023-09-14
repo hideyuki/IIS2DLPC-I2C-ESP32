@@ -1,37 +1,43 @@
 # IIS2DLPC
 Arduino library to support the IIS2DLPC 3D accelerometer
 
-## API
+## Example
 
-This sensor uses I2C or SPI to communicate.
-For I2C it is then required to create a TwoWire interface before accessing to the sensors:  
+```
+#include <Arudino.h>
+#include <IIS2DLPCSensor.h>
 
-    TwoWire dev_i2c(I2C_SDA, I2C_SCL);  
-    dev_i2c.begin();
+// Accelerometer sensor object
+IIS2DLPCSensor acc;
 
-For SPI it is then required to create a SPI interface before accessing to the sensors:  
+void setup()
+{
+  // Initialize I2C
+  Wire.begin();
+  
+  // Initialize LIS2DH12 Accelerometer
+  if (acc.begin() == IIS2DLPC_ERROR)
+  {
+    Serial.println("Accelerometer not detected. Check address jumper and wiring. Restarting...");
+    delay(3000);
+    ESP.restart();
+  }
 
-    SPIClass dev_spi(SPI_MOSI, SPI_MISO, SPI_SCK);  
-    dev_spi.begin();
+  // Enable accelerometer
+  acc.Enable();
+}
 
-An instance can be created and enabled when the I2C bus is used following the procedure below:
+void loop()
+{
+  int32_t data[3];
+  acc.GetAxes(data);
+  
+  Serial.printf("x: %6.2f, y: %6.2f, z: %6.2f\n", data[0], data[1], data[2]);
+  
+  delay(1000);
+}
 
-    IIS2DLPCSensor Accelero(&dev_i2c);
-    Accelero.begin();
-    Accelero.Enable();
-
-An instance can be created and enabled when the SPI bus is used following the procedure below:
-
-    IIS2DLPCSensor Accelero(&dev_spi, CS_PIN);
-    Accelero.begin();
-    Accelero.Enable();
-
-The access to the sensor values is done as explained below:
-
-  Read accelerometer.
-
-    int32_t accelerometer[3];
-    Accelero.GetAxes(accelerometer);
+```
 
 ## Documentation
 
